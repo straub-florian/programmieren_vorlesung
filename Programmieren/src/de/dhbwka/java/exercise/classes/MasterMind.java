@@ -39,7 +39,7 @@ public class MasterMind {
 			this.toGuess += CHARS.charAt(random.nextInt(CHARS.length()));
 		}
 		toGuess = "HDGDF";
-				// FDGDH
+		// FDGDH
 	}
 
 	public void startGame() {
@@ -73,13 +73,13 @@ public class MasterMind {
 			}
 
 			tries++;
-			
-			if(tries >= ALLOWED_TRIES){
+
+			if (tries >= ALLOWED_TRIES) {
 				out(false, TEXT_PLAYER_LOSE);
-				if(scanner.nextLine().equals("J")){
+				if (scanner.nextLine().equals("J")) {
 					init();
 					isRunning = true;
-				}else{
+				} else {
 					break;
 				}
 			}
@@ -90,25 +90,28 @@ public class MasterMind {
 		int correct = 0, wrongIndex = 0;
 
 		boolean[] isCorrect = new boolean[LENGTH];
-		
+
 		for (int i = 0; i < LENGTH; i++) {
 			if (guessed[index].charAt(i) == toGuess.charAt(i)) {
 				correct++;
-				isCorrect[index] = true;
+				isCorrect[i] = true;
 			}
 		}
-		
+
 		for (int i = 0; i < LENGTH; i++) {
-			if(!isCorrect[i]){
-				for(int j = 0; j < LENGTH; j++){
-					if(guessed[index].charAt(i)==toGuess.charAt(j)){
-						wrongIndex++;
-						break;
-					}
+			if (isCorrect[i])
+				continue;
+			
+			char guessedChar = guessed[index].charAt(i);			
+			for (int j = 0; j < LENGTH; j++) {
+				char toGuessChar = toGuess.charAt(j);
+				if (guessedChar == toGuessChar && !isCorrect[j]) {
+					wrongIndex++;
+					break;
 				}
 			}
+
 		}
-		
 
 		out("%s %1d  %1d", guessed[index], correct, wrongIndex);
 	}
