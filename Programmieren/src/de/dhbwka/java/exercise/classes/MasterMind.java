@@ -14,7 +14,6 @@ import java.util.Scanner;
  *      "https://www.iai.kit.edu/~javavorlesung/dhbw/2016-17/09_Klassen_Aufgaben-3.pdf">
  *      Javavorlesung, Klassen Nr.3</a>
  */
-@SuppressWarnings("resource")
 public class MasterMind {
 
 	/* ******************* Attributes ******************* */
@@ -23,6 +22,7 @@ public class MasterMind {
 
 	private String toGuess;
 	private String[] guessed;
+	private Scanner scanner;
 
 	private final int LENGTH = 5;
 	private final int ALLOWED_TRIES = 7;
@@ -31,7 +31,7 @@ public class MasterMind {
 	private final String TEXT_PLAYER_GUESS = "Geben Sie ihren Tipp ab: ";
 	private final String TEXT_INPUT_ERROR = "Eingegebener Wert ist fehlerhaft, bitte erneut eingeben:";
 	private final String TEXT_PLAYER_TRIES = "%1d bisherige Versuche:";
-	private final String TEXT_PLAYER_WIN = "Mit %1d Versuch(en) gewonnen!";
+	private final String TEXT_PLAYER_WIN = "Mit %1d Versuch(en) gewonnen!  Neues Spiel? (J/N)";
 	private final String TEXT_PLAYER_LOSE = "Leider verloren... Neues Spiel? (J/N)";
 
 	/* ******************* /Attributes ******************* */
@@ -40,6 +40,7 @@ public class MasterMind {
 	 * The constructor that makes the game initialize.
 	 */
 	public MasterMind() {
+		this.scanner = new Scanner(System.in);
 		init();
 	}
 
@@ -47,9 +48,10 @@ public class MasterMind {
 	 * Initializes the game.
 	 */
 	private void init() {
-		isRunning = false;
-		tries = 0;
+		this.isRunning = false;
+		this.tries = 0;
 		this.guessed = new String[ALLOWED_TRIES];
+
 		generateRandomString();
 	}
 
@@ -63,7 +65,6 @@ public class MasterMind {
 		for (int i = 0; i < LENGTH; i++) {
 			this.toGuess += CHARS.charAt(random.nextInt(CHARS.length()));
 		}
-		toGuess = "HDGDF";
 	}
 
 	/**
@@ -78,8 +79,6 @@ public class MasterMind {
 	 * The main game loop.
 	 */
 	private void gameLoop() {
-		Scanner scanner = new Scanner(System.in);
-
 		// while the game is running
 		while (isRunning) {
 			// let the player make a guess and only accept it if it is valid
@@ -95,7 +94,8 @@ public class MasterMind {
 			if (input.equals(toGuess)) {
 				out(TEXT_PLAYER_WIN, tries + 1);
 				isRunning = false;
-				break;
+				if (!newGame(scanner))
+					break;
 			}
 
 			// output his results
@@ -114,13 +114,26 @@ public class MasterMind {
 			// and ask for a new game
 			if (tries >= ALLOWED_TRIES) {
 				out(false, TEXT_PLAYER_LOSE);
-				if (scanner.nextLine().equals("J")) {
-					init();
-					isRunning = true;
-				} else {
+				if (!newGame(scanner))
 					break;
-				}
 			}
+		}
+	}
+
+	/**
+	 * Checks if the player wants to exit the game or play another one.
+	 * 
+	 * @param scanner
+	 *            a scanner to get the players input
+	 * @return if the player wants to play another game
+	 */
+	private boolean newGame(Scanner scanner) {
+		if (scanner.nextLine().equals("J")) {
+			init();
+			isRunning = true;
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -146,15 +159,15 @@ public class MasterMind {
 				isCorrect[i] = true;
 			}
 
-			// get total amount of every char
-			if(!isCorrect[i])
-			if (amounts.containsKey(to_guess)) {
-				amounts.replace(to_guess, amounts.get(to_guess) + 1);
-			} else {
-				amounts.put(to_guess, 1);
-			}
+			// get total amount of every char which is not correct
+			if (!isCorrect[i])
+				if (amounts.containsKey(to_guess)) {
+					amounts.replace(to_guess, amounts.get(to_guess) + 1);
+				} else {
+					amounts.put(to_guess, 1);
+				}
 		}
-		
+
 		// get number of correct placed chars which are at the wrong spot
 		for (int i = 0; i < LENGTH; i++) {
 			if (isCorrect[i])
