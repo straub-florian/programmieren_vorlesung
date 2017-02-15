@@ -16,7 +16,7 @@ public class Main {
 //		execHorner();
 //		execNimmspiel();
 //		execLotto();
-//		execMasterMind();
+		execMasterMind();
 	}
 
 	private static void execRadio() {

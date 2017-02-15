@@ -26,47 +26,60 @@ public class GUI extends JFrame implements MouseListener{
 		private final int BUFFERS = 2;
 		
 		private final String COLUMNS = "ABCDEFGHIJKLMNOPQ";
-		private final Font font = new Font("Arial", Font.PLAIN, 28);
+		private final Font font 	 = new Font("Arial", Font.PLAIN, 28);
+		private final Font clockFont = new Font("Arial", Font.ITALIC, 16);
 		
-		private int EXTRA_WIDTH;
-		private int EXTRA_HEIGHT;
+		private int extraWidth;
+		private int extraHeight;
+		private int infoPanelWidth;
 		
-		private ChangeGame changeGame;
+		private ColorChangerGame colorChangerGame;
 		private BufferStrategy buffer;
 		private Graphics2D graphics;
+		private Button[] buttons;
 	/* ******************* /Attributes  ******************* */
 	
 	/**
 	 * Sets up a JFrame and initializes all rendering related
 	 * attributes/actions.
 	 * 
-	 * @param changeGame The controller-class
+	 * @param colorChangerGame The controller-class
 	 */
-	public GUI(ChangeGame changeGame){
-		this.changeGame = changeGame;
+	public GUI(ColorChangerGame colorChangerGame){
+		this.colorChangerGame = colorChangerGame;
 			
-		SIZE 		= changeGame.getMatchfield().getSize();
-		TILE_SIZE = changeGame.getMatchfield().getTileSize();
+		SIZE 		= colorChangerGame.getMatchfield().getSize();
+		TILE_SIZE = colorChangerGame.getMatchfield().getTileSize();
 		
 		// setup the JFrame
-		setTitle("Wechselspiel");
+		setTitle(ColorChangerGame.TITLE);
 		setSize((SIZE)*(TILE_SIZE), (SIZE)*(TILE_SIZE));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
 		addMouseListener(this);
+		setResizable(false);
 		setVisible(true);
+		createBufferStrategy(BUFFERS);
 			
+		// initialize buffer
+		buffer = getBufferStrategy();
+		graphics = (Graphics2D) buffer.getDrawGraphics();
+		graphics.setFont(font);
+		
+		
+		infoPanelWidth = graphics.getFontMetrics().stringWidth(ColorChangerGame.TITLE)*2;
+		
 			// calculate the window borders to make the field fit in perfectly 
-			EXTRA_WIDTH  =  (int) (((SIZE)*(TILE_SIZE)) - getContentPane().getSize().getWidth());
-			EXTRA_HEIGHT =  (int) (((SIZE)*(TILE_SIZE)) - getContentPane().getSize().getHeight());
+			extraWidth  =  (int) (((SIZE)*(TILE_SIZE)) - getContentPane().getSize().getWidth());
+			extraHeight =  (int) (((SIZE)*(TILE_SIZE)) - getContentPane().getSize().getHeight());
 				
 			// apply the calculated values
-			setSize(EXTRA_WIDTH+(SIZE)*(TILE_SIZE), EXTRA_HEIGHT+(SIZE)*(TILE_SIZE));
+			setSize((extraWidth+(SIZE)*(TILE_SIZE))+ infoPanelWidth, extraHeight+(SIZE)*(TILE_SIZE));
 			setVisible(true);
-			createBufferStrategy(BUFFERS);
 		
-		// initialize attributes
-		buffer = getBufferStrategy();
+		this.buttons = new Button[2];
+		this.buttons[0] = new Button("Reset", (extraWidth+(SIZE)*(TILE_SIZE)), (SIZE)*(TILE_SIZE)-graphics.getFontMetrics().getHeight()*3, graphics);
+		this.buttons[1] = new Button("Exit" , (extraWidth+(SIZE)*(TILE_SIZE)) + infoPanelWidth - (extraWidth*2 + graphics.getFontMetrics().stringWidth("Exit")*2), (SIZE)*(TILE_SIZE)-graphics.getFontMetrics().getHeight()*3, graphics);
 	}
 	
 	/**
@@ -80,10 +93,11 @@ public class GUI extends JFrame implements MouseListener{
 		graphics.fillRect(0, 0, getWidth(), getHeight());
 		
 		// Make the game draw only at the visible part of the JFrame
-		graphics.translate(EXTRA_WIDTH/2, EXTRA_HEIGHT-EXTRA_WIDTH/2);
+		graphics.translate(extraWidth/2, extraHeight-extraWidth/2);
 		
 		// Render calls
-		renderMatchfield(graphics, changeGame.getMatchfield());
+		renderMatchfield(graphics, colorChangerGame.getMatchfield());
+		renderInfoPanel(graphics);
 		
 		// Show the buffers input
 		buffer.show();
@@ -91,7 +105,7 @@ public class GUI extends JFrame implements MouseListener{
 		// Dispose the graphics-object
 		graphics.dispose();
 	}
-	
+
 	/**
 	 * Renders all Tiles and other visual effects
 	 * 
@@ -131,18 +145,53 @@ public class GUI extends JFrame implements MouseListener{
 		}
 		
 		// Draw current selection
-		highlightTile(graphics,changeGame.getMatchfield().getCurrentTile());
+		highlightTile(graphics,colorChangerGame.getMatchfield().getCurrentTile());
 		
 		// Draw mouse selection
 		highlightTile(graphics,getMouseIndex());
-		
 	}
 	
+	/**
+	 * Renders game information to free space on the left
+	 * 
+	 * @param g
+	 *            the graphics object which we use to draw
+	 */
+	private void renderInfoPanel(Graphics2D g) {
+		int x = (extraWidth+(SIZE)*(TILE_SIZE));
+		int y = g.getFontMetrics().getHeight();
+		
+		// set color
+		g.setColor(Color.BLACK);
+		
+		// draw headline
+		g.drawString(ColorChangerGame.TITLE, x+infoPanelWidth/4, y);
+		g.drawLine(x+infoPanelWidth/4, y, x+infoPanelWidth*3/4, y);
+		
+		// draw score
+		g.drawString(String.format("Score: %4d", colorChangerGame.getMatchfield().getScore()), x, y*3);
+		
+		// draw buttons
+		for(Button b : buttons){
+			b.render(g);
+		}
+		
+		// draw passed time
+		long passedTime = colorChangerGame.getPassedTime();
+		int seconds = (int) (passedTime / 1000);
+		int minutes = seconds / 60;
+		int hours = minutes / 60;
+		g.setFont(clockFont);
+		g.drawString(String.format("Duration: %02d:%02d:%02d.%03d (hh:mm:ss.ms)", hours,minutes,seconds, passedTime%1000), x, x-y/2);
+	}
+
 	/**
 	 * Highlight the tile at the given point
 	 * 
 	 * @param g
+	 *            the graphics object which we use to draw
 	 * @param p
+	 *            the tile position
 	 */
 	private void highlightTile(Graphics2D g, Point p){
 		// if the tile is not null
@@ -166,7 +215,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * @return a color
 	 */
 	private Color getColor(int x, int y) {
-		 switch (changeGame.getMatchfield().getColorID(x-1,y-1)) {
+		 switch (colorChangerGame.getMatchfield().getColorID(x-1,y-1)) {
 			case 0:		return Color.RED;
 			case 1:		return Color.GREEN;
 			case 2:		return Color.BLUE;
@@ -183,7 +232,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * Here we call the corresponding method in our controller-class.
 	 */
 	public void mouseReleased(MouseEvent e) {
-		changeGame.mouseReleased(e);
+		colorChangerGame.mouseReleased(e);
 	}
 
 	/**
@@ -192,7 +241,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * @return the indices as a point. If it is not a valid mouse position it
 	 *         will return null.
 	 */
-	Point getMouseIndex(){
+	public Point getMouseIndex(){
 		// Check if the mouse is in the JFrame
 		if(getMousePosition()!=null){
 			// Some conversion and error prevention
@@ -214,6 +263,10 @@ public class GUI extends JFrame implements MouseListener{
 		}
 	}
 	
+	public Button[] getButtons(){
+		return buttons;
+	}
+	
 	/**
 	 * Convert a x position into a x-tile-index
 	 * 
@@ -223,7 +276,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * @return the x-tile-index
 	 */
 	private int toX(double pos){
-		return (((int)pos-EXTRA_WIDTH/2)/TILE_SIZE)*TILE_SIZE;
+		return (((int)pos-extraWidth/2)/TILE_SIZE)*TILE_SIZE;
 	}
 	
 	/**
@@ -235,7 +288,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * @return the y-tile-index
 	 */
 	private int toY(double pos){
-		return (((int)pos-(EXTRA_HEIGHT-EXTRA_HEIGHT/4+1))/TILE_SIZE)*TILE_SIZE;
+		return (((int)pos-(extraHeight-extraHeight/4+1))/TILE_SIZE)*TILE_SIZE;
 	}
 	
 	/* ********  Unused implementations ******** */
@@ -244,4 +297,39 @@ public class GUI extends JFrame implements MouseListener{
 		public void mouseExited(MouseEvent e) {}
 		public void mousePressed(MouseEvent e) {}
 	/* ******** /Unused implementations ******** */
+		
+	class Button{
+		private int x, y;
+		private int height, width;
+		private String text;
+		
+		public Button(String text, int x, int y, Graphics2D g){
+			this.x = x;
+			this.y = y;
+			this.text = text;
+			this.height = g.getFontMetrics().getHeight()*2;
+			this.width  = g.getFontMetrics().stringWidth(text)*2;
+		}
+		
+		public void render(Graphics2D g) {
+			boolean highlighted = isMouseInside();
+			g.setColor(!highlighted ? Color.LIGHT_GRAY : Color.LIGHT_GRAY.brighter());
+			g.fillRect(x, y, width, height);
+			g.setColor(!highlighted ? Color.BLACK : Color.RED);
+			g.drawRect(x, y, width, height);
+			g.setColor(Color.BLACK);
+			g.drawString(text, x+width/4, y+height-height/3);
+		}
+		
+		public boolean isMouseInside() {
+			Point p = getMousePosition();
+			if (p != null)
+				p.translate(-extraWidth / 2, -extraHeight);
+			return p != null && p.getX() >= x && p.getX() <= x + width && p.getY() >= y && p.getY() <= y + height;
+		}
+
+		public String getText() {
+			return text;
+		}
+	}
 }

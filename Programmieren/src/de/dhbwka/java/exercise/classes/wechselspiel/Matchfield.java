@@ -57,14 +57,25 @@ public class Matchfield {
 		generateRandomMap(size);
 	}
 
+
 	/**
-	 * Update all logic with the given timestep
-	 * 
-	 * @param delta
-	 *            the timestap of the game
+	 * Resets everything and generates a new matchfield
 	 */
-	public void update(double delta) {
-		
+	public void reset() {
+		score = 0;
+		generateRandomMap(size-1);
+	}
+	
+	/**
+	 * Update all logic when a swap was performed
+	 */
+	private void updateMatchfield() {
+		//Look for color sequences
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				
+			}
+		}
 	}
 
 	/**
@@ -99,7 +110,7 @@ public class Matchfield {
 			}
 		}
 	}
-
+	
 	/**
 	 * Checks if the given tiles color can is valid.
 	 * 
@@ -147,11 +158,11 @@ public class Matchfield {
 			// of the given tile
 			if (x > 0 && x == iX - 1 && y == iY)
 				neighbour = true;
-			else if (x < size - 2 && x == iX + 1 && y == iY)
+			else if (x < size  && x == iX + 1 && y == iY)
 				neighbour = true;
 			else if (y > 0 && y == iY - 1 && x == iX)
 				neighbour = true;
-			else if (y < size - 2 && y == iY + 1 && x == iX)
+			else if (y < size  && y == iY + 1 && x == iX)
 				neighbour = true;
 
 		} else {
@@ -169,34 +180,67 @@ public class Matchfield {
 	 * @return if it is swapable
 	 */
 	public boolean isSwapable(Point tileA, Point tileB) {
-		// int colorCount = 0;
-		// int colorA = colors[tileA.x][tileA.y];
-		// int colorB = colors[tileB.x][tileB.y];
+		int colorCount = 0;
+		int colorB = colors[tileA.x][tileA.y];
+		int colorA = colors[tileB.x][tileB.y];
 
-		return true;
+		colorCount = countColor(tileA, colorA);
+		colorCount += countColor(tileB, colorB);
+		
+		return colorCount >= 3;
+	}
+	
+	private int countColor(Point tile, int colorID){
+		int colorCount = 0;
+		
+		int left  = tile.x - 1;
+		int right = tile.x + 1;
+		int up    = tile.y - 1;
+		int down  = tile.y - 1;
+		while(left  > 0 && colors[left   ][tile.y] == colorID){
+			colorCount++;
+			left--;
+		}
+		while(right < size && colors[right  ][tile.y] == colorID){
+			colorCount++;
+			right++;
+		}
+		while(up    > 0 && colors[tile.x][up     ] == colorID){
+			colorCount++;
+			up--;
+		}
+		while(down  < size && colors[tile.x][down   ] == colorID){
+			colorCount++;
+			down++;
+		}
+		
+		return colorCount;
 	}
 	
 	/**
 	 * Swaps the tiles, if no tile could be swapped it deselects the currentTile
-	 * @param mouseIndex
+	 * @param selectedTile
 	 */
-	public void swapTiles(Point mouseIndex) {
+	public void swapTiles(Point selectedTile) {
 		// If a current tile is set, do the swapping
 		if (currentTile != null) {
 			// Get the mouse-selected tile
-			if (mouseIndex != null) {
+			if (selectedTile != null) {
 				// Check if the tiles are valid neighbors
-				if (isValidNeigbour(mouseIndex.x, mouseIndex.y)) {
-					int iX = mouseIndex.x - 1;
-					int iY = mouseIndex.y - 1;
+				if (isValidNeigbour(selectedTile.x, selectedTile.y)) {
+					int iX = selectedTile.x - 1;
+					int iY = selectedTile.y - 1;
 					int x = currentTile.x - 1;
 					int y = currentTile.y - 1;
 
 					// Check if they can be swapped
-					if (isSwapable(currentTile, mouseIndex)) {
+					if (isSwapable(currentTile, selectedTile)) {
 						int temp = colors[iX][iY];
 						colors[iX][iY] = colors[x][y];
 						colors[x][y] = temp;
+										
+						// Update the matchfield
+						updateMatchfield();
 					}
 				}
 				// Highlight no tile anymore (deselect the current tile)
@@ -204,7 +248,7 @@ public class Matchfield {
 			}
 			// Otherwise set the current tile
 		} else {
-			currentTile = mouseIndex;
+			currentTile = selectedTile;
 		}
 	}
 

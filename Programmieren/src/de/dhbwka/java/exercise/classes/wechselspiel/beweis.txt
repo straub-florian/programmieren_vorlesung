@@ -1,0 +1,3 @@
+Es können nicht mehr als 5 Kacheln sein, da 6 Kacheln ja 2 mal 3 Kacheln bedeuten würden 
+bzw. dass vorher schon 3 Kacheln als Sequenz vorgekommen sind und diese ja vom Spiel schon
+hätten "aufgelöst" werden müssen.    

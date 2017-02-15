@@ -3,6 +3,8 @@ package de.dhbwka.java.exercise.classes.wechselspiel;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 
+import de.dhbwka.java.exercise.classes.wechselspiel.GUI.Button;
+
 /**
  * Es gibt ein Spielfeld mit {@link #SIZE}x{@link #SIZE} Feldern. Jedes Feld hat
  * eine aus insgesamt {@link #COLOR_AMOUNT} Farben. Am Anfang wird das Spielfeld
@@ -15,41 +17,46 @@ import java.awt.event.MouseEvent;
  *      "https://www.iai.kit.edu/~javavorlesung/dhbw/2016-17/09_Klassen_Aufgaben-Sternchen.pdf">
  *      Javavorlesung, Klassen - Sternchenaufgabe</a>
  */
-public class ChangeGame implements Runnable {
-	
-	/* *******************  Attributes  ******************* */
+public class ColorChangerGame implements Runnable {
+
+	/* ******************* Attributes ******************* */
+		public static final String TITLE = "Wechselspiel";
+		
 		private final int TARGET_FPS = 60;
 		private final long OPTIMAL_TIME = 1000000000 / TARGET_FPS;
-		
+	
 		private boolean isRunning;
-		
+		private long    startTimeStamp;
+	
 		private GUI gui;
 		private Thread gameThread;
 		private Matchfield matchfield;
-	/* ******************* /Attributes  ******************* */
-		
+	/* ******************* /Attributes ******************* */
+
 	/**
 	 * The main method which starts the game
-	 * @param args possible arguments
+	 * 
+	 * @param args
+	 *            possible arguments
 	 */
 	public static void main(String[] args) {
-		ChangeGame cg = new ChangeGame(9,48);
-		cg.startGame();
+		ColorChangerGame cgg = new ColorChangerGame(9, 48);
+		cgg.startGame();
 	}
-	
+
 	/**
-	 * Constructor of ChangeGame. It initializes all attributes and sets up
-	 * the GUI and matchfield.
+	 * Constructor of {@link #ChangeGame}. It initializes all attributes and
+	 * sets up the GUI and matchfield.
 	 * 
 	 * @param size
-	 *            how much tiles the game should vertically/horizontally have    
+	 *            how much tiles the game should vertically/horizontally have
 	 * @param tilesize
 	 *            how big each tile should be in pixels
 	 */
-	public ChangeGame(int size, int tilesize){		
+	public ColorChangerGame(int size, int tilesize) {
 		this.matchfield = new Matchfield(size, tilesize);
 		this.gui = new GUI(this);
-		this.gameThread = new Thread(this,"GameThread");
+		this.gameThread = new Thread(this, "GameThread");
 	}
 
 	/**
@@ -57,7 +64,16 @@ public class ChangeGame implements Runnable {
 	 */
 	public void startGame() {
 		isRunning = true;
+		startTimeStamp = System.currentTimeMillis();
 		gameThread.start();
+	}
+
+	/**
+	 * Resets the game.
+	 */
+	private void resetGame() {
+		matchfield.reset();
+		startTimeStamp = System.currentTimeMillis();
 	}
 	
 	/**
@@ -65,11 +81,11 @@ public class ChangeGame implements Runnable {
 	 */
 	public void stopGame() {
 		// only stop the game if it is running
-		if(isRunning){			
+		if (isRunning) {
 			isRunning = false;
 		}
 	}
-	
+
 	/**
 	 * Runs once when the game is started. Contains the game loop which tries to
 	 * keep the game at a constant {@link #TARGET_FPS}.
@@ -82,41 +98,57 @@ public class ChangeGame implements Runnable {
 		while (isRunning) {
 			// Get current time value
 			long now = System.nanoTime();
-			
-			// Calculate the time that passed between the last and this iteration.
-			long updateLength = now - lastLoopTime;
-			lastLoopTime = now;
-			double delta = updateLength / 100_000_000.0d;
 
-			// Update with the given timestep
-			matchfield.update(delta);
+			// Calculate the time that passed between the last and this
+			// iteration.
+			lastLoopTime = now;
 
 			// Process all rendering
-				gui.render();		
-				// Sync with monitors Hz-rate
-				Toolkit.getDefaultToolkit().sync();
+			gui.render();
+			// Sync with monitors Hz-rate
+			Toolkit.getDefaultToolkit().sync();
 
-			// Make the thread sleep the calculated value, so that the TARGET_FPS value can be approached
+			// Make the thread sleep the calculated value, so that the
+			// TARGET_FPS value can be approached
 			try {
 				long timeout = (lastLoopTime - System.nanoTime() + OPTIMAL_TIME) / 1000000;
-				Thread.sleep(timeout < 0 ? 1000/TARGET_FPS : timeout);
+				Thread.sleep(timeout < 0 ? 1000 / TARGET_FPS : timeout);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 		// If the game is no longer running --> EXIT
 		System.exit(0);
 	}
-	
+
 	/**
-	 * Invoked when a mouse button has been released on a component.
-	 * Here we set the current tile and do the swapping.
+	 * Invoked when a mouse button has been released on a component. Here we set
+	 * the current tile and do the swapping.
 	 */
 	public void mouseReleased(MouseEvent e) {
+		for(Button b : gui.getButtons()){
+			if(b.isMouseInside()){
+				switch(b.getText()){
+					case "Exit":  stopGame();
+					case "Reset": resetGame();
+				}
+			}
+		}
 		matchfield.swapTiles(gui.getMouseIndex());
 	}
 
+	public long getPassedTime(){
+		return System.currentTimeMillis() - startTimeStamp;
+	}
+	
+	/**
+	 * @return if the game is running
+	 */
+	public boolean isRunning() {
+		return isRunning;
+	}
+	
 	/**
 	 * @return the graphical user interface
 	 */
@@ -124,18 +156,10 @@ public class ChangeGame implements Runnable {
 		return gui;
 	}
 
-	
-	/**
-	 * @return if the game is running
-	 */
-	public boolean isRunning(){
-		return isRunning;
-	}
-	
 	/**
 	 * @return the matchfield
 	 */
 	public Matchfield getMatchfield() {
 		return matchfield;
-	}	
+	}
 }
