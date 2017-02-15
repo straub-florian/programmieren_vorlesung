@@ -14,7 +14,8 @@ public class Main {
 //		execHorner();
 //		execNimmspiel();
 //		execLotto();
-		execMasterMind();
+//		execMasterMind();
+		execWechselspiel();
 	}
 
 	private static void execRadio() {
@@ -124,5 +125,11 @@ public class Main {
 	private static void execMasterMind() {
 		MasterMind m = new MasterMind();
 		m.startGame();
+	}
+	
+
+	private static void execWechselspiel() {
+		Wechselspiel w = new Wechselspiel(9,48);
+		w.startGame();
 	}
 }
