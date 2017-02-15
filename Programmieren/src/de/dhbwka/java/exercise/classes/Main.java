@@ -2,7 +2,7 @@ package de.dhbwka.java.exercise.classes;
 
 import java.util.Random;
 
-import de.dhbwka.java.exercise.classes.wechselspiel.Spielfeld;
+import de.dhbwka.java.exercise.classes.wechselspiel.Matchfield;
 
 @SuppressWarnings("unused")
 public class Main {
@@ -17,7 +17,6 @@ public class Main {
 //		execNimmspiel();
 //		execLotto();
 //		execMasterMind();
-		execWechselspiel();
 	}
 
 	private static void execRadio() {
@@ -127,12 +126,5 @@ public class Main {
 	private static void execMasterMind() {
 		MasterMind m = new MasterMind();
 		m.startGame();
-	}
-	
-
-	private static void execWechselspiel() {
-		Spielfeld w = new Spielfeld(9,48);
-		w.startGame();
-		
 	}
 }
