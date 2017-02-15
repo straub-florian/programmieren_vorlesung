@@ -2,6 +2,8 @@ package de.dhbwka.java.exercise.classes;
 
 import java.util.Random;
 
+import de.dhbwka.java.exercise.classes.wechselspiel.Spielfeld;
+
 @SuppressWarnings("unused")
 public class Main {
 
@@ -129,7 +131,8 @@ public class Main {
 	
 
 	private static void execWechselspiel() {
-		Wechselspiel w = new Wechselspiel(9,48);
+		Spielfeld w = new Spielfeld(9,48);
 		w.startGame();
+		
 	}
 }
