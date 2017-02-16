@@ -13,17 +13,22 @@ import java.util.Stack;
 public class Matchfield {
 
 	/* ******************* Attributes ******************* */
-		private final int MIN_SIZE = 6;
+		private final int MIN_SIZE = 5;
 		private final int MAX_SIZE = 16;
-		private final int MIN_TILE_SIZE = 20;
 	
-		private final int COLOR_AMOUNT = 7;
+		private final int MIN_COLOR_AMOUNT = 4;
+		private final int MAX_COLOR_AMOUNT = 10;
+		
+		private final int COLOR_AMOUNT;
+		private final int SEQUENCE_BONUS = 10;
 	
 		private int[][] colors;
 		private int size;
-		private int tileSize;
 		private int score;
+		private int foundSequences;
 	
+		private boolean hasBonus;
+		
 		private Random random;
 		private Point currentTile;
 		private Stack<ArrayList<Point>> sequences;
@@ -35,24 +40,30 @@ public class Matchfield {
 	 * @param size
 	 *            how much tiles the game should vertically/horizontally have
 	 *            (capped between {@link #MIN_SIZE} and {@link #MAX_SIZE})
+	 * @param colorAmount 
+	 * 			  how much colors the matchfield should have
 	 * @param tilesize
 	 *            how big each tile should be in pixels (minimum is capped at
 	 *            {@link #MIN_TILE_SIZE})
 	 */
-	public Matchfield(int size, int tilesize) {
-		// cap size and tilesize value
-		if (tilesize < MIN_TILE_SIZE)
-			tilesize = MIN_TILE_SIZE;
-
+	public Matchfield(int size, int colorAmount) {
+		// cap size value
 		if (size < MIN_SIZE)
 			size = MIN_SIZE;
 
 		if (size > MAX_SIZE)
 			size = MAX_SIZE;
+		
+		if(colorAmount  < MIN_COLOR_AMOUNT)
+			colorAmount = MIN_COLOR_AMOUNT;
+		
+		if(colorAmount  > MAX_COLOR_AMOUNT)
+			colorAmount = MAX_COLOR_AMOUNT;
 
+		
 		// set the final values
 		this.size = size + 1;
-		this.tileSize = tilesize;
+		this.COLOR_AMOUNT = colorAmount;
 
 		this.random = new Random();
 		this.sequences = new Stack<ArrayList<Point>>();
@@ -67,6 +78,8 @@ public class Matchfield {
 	 */
 	public void reset() {
 		score = 0;
+		hasBonus = false;
+		foundSequences = 0;
 		generateRandomMap(size-1);
 	}
 	
@@ -82,10 +95,12 @@ public class Matchfield {
 			Point stop  = points.get(points.size()-1);
 			
 			start.translate(-1, -1);
-			stop.translate(-1, -1);
+			 stop.translate(-1, -1);
+			
+			boolean horizontal = start.y == stop.y;
 			
 			// horizointal sequence
-			if(start.y == stop.y){
+			if(horizontal){
 				for(int x = start.x; x <= stop.x; x++){
 					//flag black
 					colors[x][start.y] = -1;
@@ -98,6 +113,29 @@ public class Matchfield {
 				}
 			}
 
+			// let all affected tiles "fall" down
+			if (horizontal) {
+				for (int y = start.y; y > 0; y--) {
+					for (int x = start.x; x < start.x + 3; x++) {
+						colors[x][y] = getColorID(x + 1, y);
+					}
+				}
+				for (int x = start.x; x < start.x + 3; x++) {
+					colors[x][0] = random.nextInt(COLOR_AMOUNT);
+				}
+
+			} else {
+				for (int y = start.y; y > 0; y--) {
+					colors[start.x][y + 2] = getColorID(start.x + 1, y);
+				}
+
+				for (int y = 0; y < 3; y++) {
+					colors[start.x][y] = random.nextInt(COLOR_AMOUNT);
+				}
+
+			}
+			
+			
 			// clear first element of the stack
 			sequences.pop();
 		}
@@ -219,8 +257,15 @@ public class Matchfield {
 		}
 
 		// store sequences in a stack if it was a valid sequence
-		if(points.size()+1 >= 3)
-			sequences.push(points);
+		if(points.size()+1 >= 3){			
+			sequences.push(points);		
+			foundSequences++;
+			
+			// grant time bonus
+			if(foundSequences >= SEQUENCE_BONUS){
+				hasBonus = true;
+			}
+		}
 		
 		return points.size()+1;
 	}
@@ -293,6 +338,7 @@ public class Matchfield {
 						colors[iX][iY] = colors[x][y];
 						colors[x][y] = temp;
 										
+						
 						// Update the matchfield
 						updateMatchfield();
 					}
@@ -345,12 +391,26 @@ public class Matchfield {
 	public int getSize() {
 		return size;
 	}
-
+	
 	/**
-	 * @return the size of the tiles in pixels
+	 * @return how much sequences the player found by hisself
 	 */
-	public int getTileSize() {
-		return tileSize;
+	public int getFoundSequences() {
+		return foundSequences;
+	}	
+	
+	/**
+	 * Resets the bonus if the extra time was granted
+	 * 
+	 * @return if the player achieved a bonus
+	 */
+	public boolean hasBonus(){
+		if(hasBonus){
+			hasBonus = false;
+			return true;
+		}else{
+			return false;
+		}
 	}
 	
 	/**
@@ -358,5 +418,5 @@ public class Matchfield {
 	 */
 	public Point getCurrentTile() {
 		return currentTile;
-	}
+	}	
 }

@@ -24,6 +24,8 @@ public class GUI extends JFrame implements MouseListener{
 		private final int SIZE;
 		private final int TILE_SIZE;
 		private final int BUFFERS = 2;
+		private final int MIN_TILE_SIZE = 28;
+		private final int MAX_TILE_SIZE = 55;
 		
 		private final String COLUMNS = "ABCDEFGHIJKLMNOPQ";
 		private final Font font 	 = new Font("Arial", Font.PLAIN, 28);
@@ -33,10 +35,10 @@ public class GUI extends JFrame implements MouseListener{
 		private int extraHeight;
 		private int infoPanelWidth;
 		
-		private ColorChangerGame colorChangerGame;
-		private BufferStrategy buffer;
-		private Graphics2D graphics;
 		private Button[] buttons;
+		private Graphics2D graphics;
+		private BufferStrategy buffer;
+		private ColorChangerGame colorChangerGame;
 	/* ******************* /Attributes  ******************* */
 	
 	/**
@@ -45,11 +47,18 @@ public class GUI extends JFrame implements MouseListener{
 	 * 
 	 * @param colorChangerGame The controller-class
 	 */
-	public GUI(ColorChangerGame colorChangerGame){
+	public GUI(ColorChangerGame colorChangerGame, int tilesize){
 		this.colorChangerGame = colorChangerGame;
 			
+		// Cap tilesize value
+		if (tilesize < MIN_TILE_SIZE)
+			tilesize = MIN_TILE_SIZE;
+		
+		if (tilesize > MAX_TILE_SIZE)
+			tilesize = MAX_TILE_SIZE;
+		
 		SIZE 		= colorChangerGame.getMatchfield().getSize();
-		TILE_SIZE = colorChangerGame.getMatchfield().getTileSize();
+		TILE_SIZE   = tilesize;
 		
 		// setup the JFrame
 		setTitle(ColorChangerGame.TITLE);
@@ -77,9 +86,10 @@ public class GUI extends JFrame implements MouseListener{
 			setSize((extraWidth+(SIZE)*(TILE_SIZE))+ infoPanelWidth, extraHeight+(SIZE)*(TILE_SIZE));
 			setVisible(true);
 		
-		this.buttons = new Button[2];
+		this.buttons = new Button[3];
 		this.buttons[0] = new Button("Reset", (extraWidth+(SIZE)*(TILE_SIZE)), (SIZE)*(TILE_SIZE)-graphics.getFontMetrics().getHeight()*3, graphics);
 		this.buttons[1] = new Button("Exit" , (extraWidth+(SIZE)*(TILE_SIZE)) + infoPanelWidth - (extraWidth*2 + graphics.getFontMetrics().stringWidth("Exit")*2), (SIZE)*(TILE_SIZE)-graphics.getFontMetrics().getHeight()*3, graphics);
+		this.buttons[2] = new Button("Start Game" , (extraWidth+(SIZE)*(TILE_SIZE)) + (infoPanelWidth - (extraWidth*2 + graphics.getFontMetrics().stringWidth("Start Game")*2))/2, (SIZE)*(TILE_SIZE)-graphics.getFontMetrics().getHeight()*5, graphics);
 	}
 	
 	/**
@@ -130,10 +140,10 @@ public class GUI extends JFrame implements MouseListener{
 				// Draw all the colored tiles
 				}else{
 					// If the selection is not null, highlight only the neighbors
-					if(matchfield.isValidNeigbour(x,y)){
+					if(matchfield.isValidNeigbour(x,y) && colorChangerGame.isInputAllowed()){
 						g.setColor(getColor(x,y));
 					}else{
-						g.setColor((getColor(x,y)).darker().darker().darker());
+						g.setColor(!colorChangerGame.isInputAllowed() ? Color.DARK_GRAY : (getColor(x,y)).darker().darker().darker());
 					}
 					g.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
 				}
@@ -177,12 +187,13 @@ public class GUI extends JFrame implements MouseListener{
 		}
 		
 		// draw passed time
-		long passedTime = colorChangerGame.getPassedTime();
-		int seconds = (int) (passedTime / 1000);
+		double countdown = colorChangerGame.getCountdown().getTimerValue();
+		int seconds = (int) countdown;
 		int minutes = seconds / 60;
 		int hours = minutes / 60;
+		g.setColor(seconds > 20 ? Color.BLACK : Color.RED);
 		g.setFont(clockFont);
-		g.drawString(String.format("Duration: %02d:%02d:%02d.%03d (hh:mm:ss.ms)", hours,minutes%60,seconds%60, passedTime%1000), x, x-y/2);
+		g.drawString(String.format("Duration: %02d:%02d:%02d.%03.3f (hh:mm:ss.ms)", hours,minutes%60,seconds%60, countdown-seconds), x, x-y/2);
 	}
 
 	/**
@@ -195,7 +206,7 @@ public class GUI extends JFrame implements MouseListener{
 	 */
 	private void highlightTile(Graphics2D g, Point p){
 		// if the tile is not null
-		if(p != null){			
+		if(p != null && colorChangerGame.isInputAllowed()){			
 			// draw a darker tile and a brighter dot in the middle at the given tile position
 			int radius = TILE_SIZE/4;
 			g.setColor((getColor(p.x,p.y)).darker());
@@ -219,10 +230,13 @@ public class GUI extends JFrame implements MouseListener{
 			case 0:		return Color.RED;
 			case 1:		return Color.GREEN;
 			case 2:		return Color.BLUE;
-			case 3:		return Color.ORANGE;
+			case 3:		return new Color(0xFF7300); // orange
 			case 4:		return Color.YELLOW;
-			case 5:		return new Color(153,51,102); // strange red...
+			case 5:		return new Color(0x993366); // purple
 			case 6:		return Color.WHITE;
+			case 7:     return Color.CYAN;
+			case 8:     return new Color(0x00FF9E); // turquoise
+			case 9:     return Color.MAGENTA;
 			default:	return Color.BLACK;
 		}
 	}
@@ -323,7 +337,7 @@ public class GUI extends JFrame implements MouseListener{
 			this.x = x;
 			this.y = y;
 			this.text = text;
-			this.height = g.getFontMetrics().getHeight()*2;
+			this.height = (int) (g.getFontMetrics().getHeight()*1.5);
 			this.width  = g.getFontMetrics().stringWidth(text)*2;
 		}
 		

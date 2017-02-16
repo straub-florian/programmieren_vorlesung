@@ -22,14 +22,17 @@ public class ColorChangerGame implements Runnable {
 	/* ******************* Attributes ******************* */
 		public static final String TITLE = "Wechselspiel";
 		
+		private static final double INITIAL_COUNTDOWN_VALUE = 120;
+		
 		private final int TARGET_FPS = 60;
 		private final long OPTIMAL_TIME = 1000000000 / TARGET_FPS;
 	
 		private boolean isRunning;
-		private long    startTimeStamp;
-	
+		private boolean isInputAllowed;
+		
 		private GUI gui;
 		private Thread gameThread;
+		private Countdown countdown;
 		private Matchfield matchfield;
 	/* ******************* /Attributes ******************* */
 
@@ -40,7 +43,11 @@ public class ColorChangerGame implements Runnable {
 	 *            possible arguments
 	 */
 	public static void main(String[] args) {
-		ColorChangerGame cgg = new ColorChangerGame(9, 48);
+		int size 	 = 9;
+		int tilesize = 64;
+		int colors 	 = 7;
+		
+		ColorChangerGame cgg = new ColorChangerGame(size,tilesize,colors);
 		cgg.startGame();
 	}
 
@@ -53,10 +60,11 @@ public class ColorChangerGame implements Runnable {
 	 * @param tilesize
 	 *            how big each tile should be in pixels
 	 */
-	public ColorChangerGame(int size, int tilesize) {
-		this.matchfield = new Matchfield(size, tilesize);
-		this.gui = new GUI(this);
+	public ColorChangerGame(int size, int tilesize, int colorAmount) {	
+		this.matchfield = new Matchfield(size, colorAmount);
+		this.gui = new GUI(this, tilesize);
 		this.gameThread = new Thread(this, "GameThread");
+		this.countdown = new Countdown(INITIAL_COUNTDOWN_VALUE);
 	}
 
 	/**
@@ -64,7 +72,7 @@ public class ColorChangerGame implements Runnable {
 	 */
 	public void startGame() {
 		isRunning = true;
-		startTimeStamp = System.currentTimeMillis();
+		isInputAllowed = false;
 		gameThread.start();
 	}
 
@@ -72,8 +80,9 @@ public class ColorChangerGame implements Runnable {
 	 * Resets the game.
 	 */
 	private void resetGame() {
+		isInputAllowed = false;
 		matchfield.reset();
-		startTimeStamp = System.currentTimeMillis();
+		countdown.reset();
 	}
 	
 	/**
@@ -101,8 +110,22 @@ public class ColorChangerGame implements Runnable {
 
 			// calculate the time that passed between the last and this
 			// iteration.
+			long updateLength = now - lastLoopTime;
 			lastLoopTime = now;
+			double delta = updateLength / 1000_000_000.;
 
+			// update the countdown
+			countdown.update(delta);
+			
+			// End the game if the countdown hits zero
+			if(countdown.hasFinished()){
+				resetGame();
+			}
+			
+			if(matchfield.hasBonus()){
+				countdown.add(45);
+			}
+			
 			// process all rendering
 			gui.render();
 			// sync with monitors Hz-rate
@@ -126,33 +149,47 @@ public class ColorChangerGame implements Runnable {
 	 * Invoked when a mouse button has been released on a component. Here we set
 	 * the current tile and do the swapping.
 	 * 
-	 * @param e
+	 * @param mouseEvent
 	 *            the mouse event
 	 */
-	public void mouseReleased(MouseEvent e) {
+	public void mouseReleased(MouseEvent mouseEvent) {
 		// handle button press
 		for(Button b : gui.getButtons()){
 			if(b.isMouseInside()){
 				switch(b.getText()){
-					case "Exit":  stopGame();
-					case "Reset": resetGame();
+					case "Exit":  stopGame(); break;
+					case "Reset": resetGame(); break;
+					case "Start Game": if(!isInputAllowed)activateInput(); break;
 				}
 			}
 		}
 		
 		// swap tiles
-		matchfield.swapTiles(gui.getMouseIndex());
+		if (isInputAllowed)
+			matchfield.swapTiles(gui.getMouseIndex());
 	}
 
-	public long getPassedTime(){
-		return System.currentTimeMillis() - startTimeStamp;
+	/**
+	 * Starts the countdown and makes the player be able to interact.
+	 */
+	private void activateInput() {
+		countdown.start();
+		isInputAllowed=true;
 	}
-	
+
 	/**
 	 * @return if the game is running
 	 */
 	public boolean isRunning() {
 		return isRunning;
+	}
+	
+	/**
+	 * @return if the game accepts the players input. False if the player did
+	 *         not start the game yet.
+	 */
+	public boolean isInputAllowed() {
+		return isInputAllowed;
 	}
 	
 	/**
@@ -167,5 +204,12 @@ public class ColorChangerGame implements Runnable {
 	 */
 	public Matchfield getMatchfield() {
 		return matchfield;
+	}
+	
+	/**
+	 * @return the countdown timer
+	 */
+	public Countdown getCountdown() {
+		return countdown;
 	}
 }
