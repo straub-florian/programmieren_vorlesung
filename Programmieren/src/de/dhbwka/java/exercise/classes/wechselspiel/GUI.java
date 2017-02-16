@@ -182,7 +182,7 @@ public class GUI extends JFrame implements MouseListener{
 		int minutes = seconds / 60;
 		int hours = minutes / 60;
 		g.setFont(clockFont);
-		g.drawString(String.format("Duration: %02d:%02d:%02d.%03d (hh:mm:ss.ms)", hours,minutes,seconds, passedTime%1000), x, x-y/2);
+		g.drawString(String.format("Duration: %02d:%02d:%02d.%03d (hh:mm:ss.ms)", hours,minutes%60,seconds%60, passedTime%1000), x, x-y/2);
 	}
 
 	/**
@@ -215,7 +215,7 @@ public class GUI extends JFrame implements MouseListener{
 	 * @return a color
 	 */
 	private Color getColor(int x, int y) {
-		 switch (colorChangerGame.getMatchfield().getColorID(x-1,y-1)) {
+		 switch (colorChangerGame.getMatchfield().getColorID(x,y)) {
 			case 0:		return Color.RED;
 			case 1:		return Color.GREEN;
 			case 2:		return Color.BLUE;
@@ -263,6 +263,9 @@ public class GUI extends JFrame implements MouseListener{
 		}
 	}
 	
+	/**
+	 * @return All the buttons of the gui
+	 */
 	public Button[] getButtons(){
 		return buttons;
 	}
@@ -290,19 +293,32 @@ public class GUI extends JFrame implements MouseListener{
 	private int toY(double pos){
 		return (((int)pos-(extraHeight-extraHeight/4+1))/TILE_SIZE)*TILE_SIZE;
 	}
-	
-	/* ********  Unused implementations ******** */
-		public void mouseClicked(MouseEvent e) {}
-		public void mouseEntered(MouseEvent e) {}
-		public void mouseExited(MouseEvent e) {}
-		public void mousePressed(MouseEvent e) {}
-	/* ******** /Unused implementations ******** */
 		
+	/**
+	 * Represtents an interactive GUI-button
+	 * 
+	 * @author Florian Straub
+	 */
 	class Button{
-		private int x, y;
-		private int height, width;
-		private String text;
 		
+		/* ******  Attributes  ****** */
+			private int x, y;
+			private int height, width;
+			private String text;
+		/* ****** /Attributes  ****** */
+			
+		/**
+		 * Creates a new button for the GUI
+		 * 
+		 * @param text
+		 *            the text it should display
+		 * @param x
+		 *            the x-position
+		 * @param y
+		 *            the y-position
+		 * @param g
+		 *            the graphics that calculates the string width and height
+		 */
 		public Button(String text, int x, int y, Graphics2D g){
 			this.x = x;
 			this.y = y;
@@ -311,6 +327,12 @@ public class GUI extends JFrame implements MouseListener{
 			this.width  = g.getFontMetrics().stringWidth(text)*2;
 		}
 		
+		/**
+		 * Renders the button at the given x/y coordinates
+		 * 
+		 * @param g
+		 *            the graphics object used to render on the screen
+		 */
 		public void render(Graphics2D g) {
 			boolean highlighted = isMouseInside();
 			g.setColor(!highlighted ? Color.LIGHT_GRAY : Color.LIGHT_GRAY.brighter());
@@ -321,6 +343,9 @@ public class GUI extends JFrame implements MouseListener{
 			g.drawString(text, x+width/4, y+height-height/3);
 		}
 		
+		/**
+		 * @return if the mouse is inside of the button
+		 */
 		public boolean isMouseInside() {
 			Point p = getMousePosition();
 			if (p != null)
@@ -328,8 +353,18 @@ public class GUI extends JFrame implements MouseListener{
 			return p != null && p.getX() >= x && p.getX() <= x + width && p.getY() >= y && p.getY() <= y + height;
 		}
 
+		/**
+		 * @return the text of the button
+		 */
 		public String getText() {
 			return text;
 		}
 	}
+	
+	/* ********  Unused implementations ******** */
+		public void mouseClicked(MouseEvent e) {}
+		public void mouseEntered(MouseEvent e) {}
+		public void mouseExited(MouseEvent e) {}
+		public void mousePressed(MouseEvent e) {}
+	/* ******** /Unused implementations ******** */
 }

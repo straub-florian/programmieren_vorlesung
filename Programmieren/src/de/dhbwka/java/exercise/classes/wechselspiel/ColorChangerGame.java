@@ -6,8 +6,8 @@ import java.awt.event.MouseEvent;
 import de.dhbwka.java.exercise.classes.wechselspiel.GUI.Button;
 
 /**
- * Es gibt ein Spielfeld mit {@link #SIZE}x{@link #SIZE} Feldern. Jedes Feld hat
- * eine aus insgesamt {@link #COLOR_AMOUNT} Farben. Am Anfang wird das Spielfeld
+ * Es gibt ein Spielfeld mit NxN Feldern. Jedes Feld hat
+ * eine aus insgesamt {@link Matchfield#COLOR_AMOUNT} Farben. Am Anfang wird das Spielfeld
  * zufällig so mit Farben initialisiert, dass an keiner Stelle 3 neben - oder
  * übereinander liegende Felder dieselbe Farbe haben (Diagonalen spielen keine
  * Rolle)...
@@ -45,8 +45,8 @@ public class ColorChangerGame implements Runnable {
 	}
 
 	/**
-	 * Constructor of {@link #ChangeGame}. It initializes all attributes and
-	 * sets up the GUI and matchfield.
+	 * Constructor of {@link ColorChangerGame}. It initializes all attributes and
+	 * sets up the {@link GUI} and {@link Matchfield}.
 	 * 
 	 * @param size
 	 *            how much tiles the game should vertically/horizontally have
@@ -91,24 +91,24 @@ public class ColorChangerGame implements Runnable {
 	 * keep the game at a constant {@link #TARGET_FPS}.
 	 */
 	public void run() {
-		// Get initial time value
+		// get initial time value
 		long lastLoopTime = System.nanoTime();
 
-		// As long as the game should run
+		// as long as the game should run
 		while (isRunning) {
-			// Get current time value
+			// get current time value
 			long now = System.nanoTime();
 
-			// Calculate the time that passed between the last and this
+			// calculate the time that passed between the last and this
 			// iteration.
 			lastLoopTime = now;
 
-			// Process all rendering
+			// process all rendering
 			gui.render();
-			// Sync with monitors Hz-rate
+			// sync with monitors Hz-rate
 			Toolkit.getDefaultToolkit().sync();
 
-			// Make the thread sleep the calculated value, so that the
+			// make the thread sleep the calculated value, so that the
 			// TARGET_FPS value can be approached
 			try {
 				long timeout = (lastLoopTime - System.nanoTime() + OPTIMAL_TIME) / 1000000;
@@ -118,15 +118,19 @@ public class ColorChangerGame implements Runnable {
 			}
 		}
 
-		// If the game is no longer running --> EXIT
+		// if the game is no longer running --> EXIT
 		System.exit(0);
 	}
 
 	/**
 	 * Invoked when a mouse button has been released on a component. Here we set
 	 * the current tile and do the swapping.
+	 * 
+	 * @param e
+	 *            the mouse event
 	 */
 	public void mouseReleased(MouseEvent e) {
+		// handle button press
 		for(Button b : gui.getButtons()){
 			if(b.isMouseInside()){
 				switch(b.getText()){
@@ -135,6 +139,8 @@ public class ColorChangerGame implements Runnable {
 				}
 			}
 		}
+		
+		// swap tiles
 		matchfield.swapTiles(gui.getMouseIndex());
 	}
 

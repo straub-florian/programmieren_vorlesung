@@ -1,7 +1,9 @@
 package de.dhbwka.java.exercise.classes.wechselspiel;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.Stack;
 
 /**
  * Contains the matchfield and maintains it.
@@ -24,6 +26,7 @@ public class Matchfield {
 	
 		private Random random;
 		private Point currentTile;
+		private Stack<ArrayList<Point>> sequences;
 	/* ******************* /Attributes ******************* */
 
 	/**
@@ -52,6 +55,7 @@ public class Matchfield {
 		this.tileSize = tilesize;
 
 		this.random = new Random();
+		this.sequences = new Stack<ArrayList<Point>>();
 
 		// generate a random map
 		generateRandomMap(size);
@@ -67,15 +71,37 @@ public class Matchfield {
 	}
 	
 	/**
-	 * Update all logic when a swap was performed
+	 * Clears all sequences and "refills" the matchfield
 	 */
 	private void updateMatchfield() {
-		//Look for color sequences
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
-				
+		// clear every sequence
+		while(!sequences.isEmpty()){
+			ArrayList<Point> points = sequences.peek();
+			
+			Point start = points.get(0);
+			Point stop  = points.get(points.size()-1);
+			
+			start.translate(-1, -1);
+			stop.translate(-1, -1);
+			
+			// horizointal sequence
+			if(start.y == stop.y){
+				for(int x = start.x; x <= stop.x; x++){
+					//flag black
+					colors[x][start.y] = -1;
+				}				
+			// vertical sequence
+			}else{
+				for(int y = start.y; y <= stop.y; y++){
+					//flag black
+					colors[start.x][y] = -1;
+				}
 			}
+
+			// clear first element of the stack
+			sequences.pop();
 		}
+		
 	}
 
 	/**
@@ -179,46 +205,66 @@ public class Matchfield {
 	 * @param tileB
 	 * @return if it is swapable
 	 */
-	public boolean isSwapable(Point tileA, Point tileB) {
-		int colorCount = 0;
-		int colorB = colors[tileA.x][tileA.y];
-		int colorA = colors[tileB.x][tileB.y];
+	public int getAmountOfEquallyColoredTiles(Point tile, Point dest) {
+		// count horizontal tiles
+		ArrayList<Point> points =      countColor(dest, tile, 0);
+					     points.addAll(countColor(dest, tile, 1));
 
-		colorCount = countColor(tileA, colorA);
-		colorCount += countColor(tileB, colorB);
+		// if no sequence bigger than 2 was found check the vertical tiles (+1
+		// because the tile itself will not be counted as it was not swapped)
+		if(points.size()+1 < 3){
+			points.clear();
+			points =      countColor(dest, tile, 2);
+			points.addAll(countColor(dest, tile, 3));
+		}
+
+		// store sequences in a stack if it was a valid sequence
+		if(points.size()+1 >= 3)
+			sequences.push(points);
 		
-		return colorCount >= 3;
+		return points.size()+1;
 	}
 	
-	private int countColor(Point tile, int colorID){
-		int colorCount = 0;
+	private ArrayList<Point> countColor(Point dest, Point toSwap, int direction){
+		int ctr = 1;
+		ArrayList<Point> points = new ArrayList<Point>();
 		
-		int left  = tile.x - 1;
-		int right = tile.x + 1;
-		int up    = tile.y - 1;
-		int down  = tile.y - 1;
-		while(left  > 0 && colors[left   ][tile.y] == colorID){
-			colorCount++;
-			left--;
-		}
-		while(right < size && colors[right  ][tile.y] == colorID){
-			colorCount++;
-			right++;
-		}
-		while(up    > 0 && colors[tile.x][up     ] == colorID){
-			colorCount++;
-			up--;
-		}
-		while(down  < size && colors[tile.x][down   ] == colorID){
-			colorCount++;
-			down++;
-		}
+		// Check if inside bounds, if the current position is not the toSwap
+		// tile and if the colorID is the one we are looking for
+		switch (direction) {
+			case 0:
+				while(dest.x - ctr > 0 && dest.x - ctr != toSwap.x && getColorID(dest.x - ctr, dest.y) == getColorID(toSwap)){
+					points.add(new Point(dest.x-ctr, dest.y));
+					ctr++;
+				}
+				break;
+			case 1:
+				while(dest.x + ctr < size && dest.x + ctr != toSwap.x && getColorID(dest.x + ctr, dest.y) == getColorID(toSwap)){
+					points.add(new Point(dest.x+ctr, dest.y));
+					ctr++;
+				}
+				break;
+			case 2:
+				while(dest.y - ctr > 0  && dest.y - ctr != toSwap.y && getColorID(dest.x, dest.y - ctr) == getColorID(toSwap)){
+					points.add(new Point(dest.x, dest.y-ctr));
+					ctr++;
+				}
+				break;
+			case 3:
+				while(dest.y + ctr < size && dest.y + ctr != toSwap.y && getColorID(dest.x, dest.y + ctr) == getColorID(toSwap)){
+					points.add(new Point(dest.x, dest.y+ctr));
+					ctr++;
+				}
+				break;
+		}	
 		
-		return colorCount;
+		return points;
 	}
 	
 	/**
-	 * Swaps the tiles, if no tile could be swapped it deselects the currentTile
+	 * Swaps the tiles, if no tile could be swapped it deselects the
+	 * currentTile. Also selects a tiel if no tile is currently selected.
+	 * 
 	 * @param selectedTile
 	 */
 	public void swapTiles(Point selectedTile) {
@@ -233,8 +279,16 @@ public class Matchfield {
 					int x = currentTile.x - 1;
 					int y = currentTile.y - 1;
 
+					int tileA = getAmountOfEquallyColoredTiles(currentTile, selectedTile);
+					int tileB = getAmountOfEquallyColoredTiles(selectedTile, currentTile);
+					
 					// Check if they can be swapped
-					if (isSwapable(currentTile, selectedTile)) {
+					if (tileA >= 3 || tileB >= 3) {
+						if(tileA >= 3){
+							score(tileA);
+						}else{
+							score(tileB);
+						}
 						int temp = colors[iX][iY];
 						colors[iX][iY] = colors[x][y];
 						colors[x][y] = temp;
@@ -253,6 +307,15 @@ public class Matchfield {
 	}
 
 	/**
+	 * Calculates the score
+	 * @param tiles the amount of equally colored tiles
+	 */
+	private void score(int tiles) {
+		score += tiles * 10;
+	}
+
+
+	/**
 	 * @return the score of the current player
 	 */
 	public int getScore() {
@@ -265,7 +328,15 @@ public class Matchfield {
 	 * @return the corresponding color value
 	 */
 	public int getColorID(int x, int y) {
-		return colors[x][y];
+		return colors[x-1][y-1];
+	}
+	
+	/**
+	 * @param tile the indices packed inside a point
+	 * @return the corresponding color value
+	 */
+	public int getColorID(Point tile) {
+		return colors[tile.x-1][tile.y-1];
 	}
 	
 	/**
