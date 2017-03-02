@@ -140,7 +140,16 @@ public class Matchfield {
 			sequences.pop();
 		}
 		
+		// look for possible new sequences
+		scanMatchfield();
 	}
+
+	private void scanMatchfield() {
+		do{
+			
+		}while(sequences.size() > 0);
+	}
+
 
 	/**
 	 * Generates a random map with the given size.
